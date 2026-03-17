@@ -1,6 +1,5 @@
 package pt.unl.fct.di.adc.firstwebapp.resources;
 
-import java.sql.Time;
 import java.util.logging.Logger;
 
 import org.apache.commons.codec.digest.DigestUtils;
