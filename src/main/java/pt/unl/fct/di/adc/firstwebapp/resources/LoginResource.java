@@ -30,6 +30,7 @@ import com.google.cloud.datastore.KeyFactory;
 import com.google.cloud.datastore.PathElement;
 import com.google.cloud.datastore.QueryResults;
 import com.google.cloud.datastore.DatastoreOptions;
+import com.google.cloud.datastore.StructuredQuery.OrderBy;
 import com.google.cloud.datastore.StructuredQuery.PropertyFilter;
 import com.google.cloud.datastore.StructuredQuery.CompositeFilter;
 
@@ -217,6 +218,48 @@ public class LoginResource {
 									PropertyFilter.ge(USER_LOGIN_TIME, yesterday)
 							)
 					)
+					.build();
+			QueryResults<Entity> logs = datastore.run(query);
+			
+			List<Date> loginDates = new ArrayList<Date>();
+			logs.forEachRemaining(userlog -> {
+				loginDates.add(userlog.getTimestamp(USER_LOGIN_TIME).toDate());
+			});
+			
+			return Response.ok(g.toJson(loginDates)).build();
+		}
+		return Response.status(Status.FORBIDDEN).
+				entity(MESSAGE_INVALID_CREDENTIALS)
+				.build();
+	}
+
+	@POST
+	@Path("/user/login-logs/v2")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	public Response getLatestLogins(LoginData data) {
+		
+		Key userKey = userKeyFactory.newKey(data.username);
+		
+		Entity user = datastore.get(userKey);
+		if( user != null && user.getString(USER_PWD).equals(DigestUtils.sha512Hex(data.password))) {
+			
+			// Get the date of yesterday
+			Calendar cal = Calendar.getInstance();
+			cal.add(Calendar.DATE, -1);
+			Timestamp yesterday = Timestamp.of(cal.getTime());
+			
+			Query<Entity> query = Query.newEntityQueryBuilder()
+					.setKind("UserLog")
+					.setFilter(
+							CompositeFilter.and(
+									PropertyFilter.hasAncestor(
+											datastore.newKeyFactory().setKind("User").newKey(data.username)),
+									PropertyFilter.ge(USER_LOGIN_TIME, yesterday)
+							)
+					)
+					.setOrderBy(OrderBy.desc(USER_LOGIN_TIME))
+					.setLimit(3)
 					.build();
 			QueryResults<Entity> logs = datastore.run(query);
 			
