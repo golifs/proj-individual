@@ -7,8 +7,8 @@
   
   <packaging>war</packaging>
   
-  <name>FirstWebApplication</name>
-  <description>ADC 2024/2025 Example Application</description>
+  <name>WebApplication</name>
+  <description>ADC Individual Project</description>
 
   <properties>
 		<appengine.maven.plugin.version>2.8.3</appengine.maven.plugin.version>
@@ -127,13 +127,6 @@
 		    <version>3.0.0</version>
 		</dependency>
 -->
-		
-
-		<dependency>
-        <groupId>com.auth0</groupId>
-        <artifactId>java-jwt</artifactId>
-        <version>4.2.1</version> 
-    </dependency>
 		
 		<dependency>
 			<groupId>com.google.code.gson</groupId>
