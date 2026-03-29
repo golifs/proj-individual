@@ -23,19 +23,6 @@
   - `/modaccount`
   - `/deleteaccount`
 
-  ## Run
-  Compile:
-  ```bash
-  mvn clean compile
-
-  Run locally:
-
-  mvn appengine:run
-
-  Deploy:
-
-  mvn appengine:deploy
-
   ## Notes
 
   - Authentication is based on tokens stored in Datastore.
