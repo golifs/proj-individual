@@ -36,8 +36,7 @@ public class ShowAuthSessionsResource {
     private static final String MESSAGE_UNAUTHORIZED = "The operation is not allowed for the user role";
     private static final String ERROR_UNAUTHORIZED = "9905";
 
-    private static final String MESSAGE_INVALID_INPUT =
-            "The call is using input data not following the correct specification";
+    private static final String MESSAGE_INVALID_INPUT = "The call is using input data not following the correct specification";
     private static final String ERROR_INVALID_INPUT = "9906";
 
     private static final Datastore datastore = DatastoreOptions.getDefaultInstance().getService();
@@ -51,9 +50,9 @@ public class ShowAuthSessionsResource {
     @Consumes(MediaType.APPLICATION_JSON)
     public Response showSessions(ShowAuthSessionsRequest request) {
         if (request == null || request.input == null || request.token == null ||
-                request.token.tokenId == null || request.token.tokenId.isBlank() ||
-                request.token.username == null || request.token.username.isBlank() ||
-                request.token.role == null || request.token.role.isBlank()) {
+        request.token.tokenId == null || request.token.tokenId.isBlank() ||
+        request.token.username == null || request.token.username.isBlank() ||
+        request.token.role == null || request.token.role.isBlank()) {
             ErrorResponse error = new ErrorResponse(ERROR_INVALID_INPUT, MESSAGE_INVALID_INPUT);
             return Response.ok(g.toJson(error)).build();
         }
@@ -83,10 +82,8 @@ public class ShowAuthSessionsResource {
         String tokenRole = tokenEntity.getString("role");
         long issuedAt = tokenEntity.getLong("issuedAt");
 
-        if (!request.token.username.equals(tokenUsername)
-                || !request.token.role.equals(tokenRole)
-                || request.token.issuedAt != issuedAt
-                || request.token.expiresAt != expiresAt) {
+        if (!request.token.username.equals(tokenUsername) || !request.token.role.equals(tokenRole)
+        || request.token.issuedAt != issuedAt || request.token.expiresAt != expiresAt) {
             ErrorResponse error = new ErrorResponse(ERROR_INVALID_TOKEN, MESSAGE_INVALID_TOKEN);
             return Response.ok(g.toJson(error)).build();
         }

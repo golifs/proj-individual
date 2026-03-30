@@ -24,32 +24,29 @@ import pt.unl.fct.di.adc.firstwebapp.util.changeuserpassword.ChangeUserPasswordR
 @Produces(MediaType.APPLICATION_JSON + ";charset=utf-8")
 public class ChangeUserPasswordResource {
 
-    private static final String MESSAGE_INVALID_CREDENTIALS =
-            "The username-password pair is not valid";
+    private static final String MESSAGE_INVALID_CREDENTIALS = "The username-password pair is not valid";
     private static final String ERROR_INVALID_CREDENTIALS = "9900";
 
-    private static final String MESSAGE_INVALID_TOKEN =
-            "The operation is called with an invalid token (wrong format for example)";
+    private static final String MESSAGE_INVALID_TOKEN = "The operation is called with an invalid token (wrong format for example)";
     private static final String ERROR_INVALID_TOKEN = "9903";
 
-    private static final String MESSAGE_TOKEN_EXPIRED =
-            "The operation is called with a token that is expired";
+    private static final String MESSAGE_TOKEN_EXPIRED = "The operation is called with a token that is expired";
     private static final String ERROR_TOKEN_EXPIRED = "9904";
 
-    private static final String MESSAGE_UNAUTHORIZED =
-            "The operation is not allowed for the user role";
+    private static final String MESSAGE_UNAUTHORIZED = "The operation is not allowed for the user role";
     private static final String ERROR_UNAUTHORIZED = "9905";
 
-    private static final String MESSAGE_INVALID_INPUT =
-            "The call is using input data not following the correct specification";
+    private static final String MESSAGE_INVALID_INPUT = "The call is using input data not following the correct specification";
     private static final String ERROR_INVALID_INPUT = "9906";
 
-    private static final Datastore datastore =
-DatastoreOptions.getDefaultInstance().getService();
+    private static final String MESSAGE_FORBIDDEN = "The operation generated a forbidden error by other reason";
+    private static final String ERROR_FORBIDDEN = "9907";
+
+    private static final Datastore datastore = DatastoreOptions.getDefaultInstance().getService();
 
     private final Gson g = new Gson();
 
-    public ChangeUserPasswordResource() { }
+    public ChangeUserPasswordResource() {}
 
     @POST
     @Path("/")
@@ -57,19 +54,17 @@ DatastoreOptions.getDefaultInstance().getService();
     public Response changeUserPassword(ChangeUserPasswordRequest request) {
 
         if (request == null || request.input == null || request.token == null ||
-            request.input.username == null || request.input.username.isBlank() ||
-            request.input.oldPassword == null || request.input.oldPassword.isBlank() ||
-            request.input.newPassword == null || request.input.newPassword.isBlank() ||
-            request.token.tokenId == null || request.token.tokenId.isBlank() ||
-            request.token.username == null || request.token.username.isBlank() ||
-            request.token.role == null || request.token.role.isBlank()) {
+        request.input.username == null || request.input.username.isBlank() ||
+        request.input.oldPassword == null || request.input.oldPassword.isBlank() ||
+        request.input.newPassword == null || request.input.newPassword.isBlank() ||
+        request.token.tokenId == null || request.token.tokenId.isBlank() ||
+        request.token.username == null || request.token.username.isBlank() ||
+        request.token.role == null || request.token.role.isBlank()) {
             ErrorResponse error = new ErrorResponse(ERROR_INVALID_INPUT, MESSAGE_INVALID_INPUT);
             return Response.ok(g.toJson(error)).build();
         }
 
-        Key tokenKey = datastore.newKeyFactory()
-                .setKind("AuthToken")
-                .newKey(request.token.tokenId);
+        Key tokenKey = datastore.newKeyFactory().setKind("AuthToken").newKey(request.token.tokenId);
 
         Entity tokenEntity = datastore.get(tokenKey);
 
@@ -94,10 +89,8 @@ DatastoreOptions.getDefaultInstance().getService();
         String tokenRole = tokenEntity.getString("role");
         long issuedAt = tokenEntity.getLong("issuedAt");
 
-        if (!request.token.username.equals(tokenUsername)
-                || !request.token.role.equals(tokenRole)
-                || request.token.issuedAt != issuedAt
-                || request.token.expiresAt != expiresAt) {
+        if (!request.token.username.equals(tokenUsername) || !request.token.role.equals(tokenRole)
+        || request.token.issuedAt != issuedAt || request.token.expiresAt != expiresAt) {
             ErrorResponse error = new ErrorResponse(ERROR_INVALID_TOKEN, MESSAGE_INVALID_TOKEN);
             return Response.ok(g.toJson(error)).build();
         }
@@ -107,9 +100,7 @@ DatastoreOptions.getDefaultInstance().getService();
             return Response.ok(g.toJson(error)).build();
         }
 
-        Key userKey = datastore.newKeyFactory()
-                .setKind("User")
-                .newKey(request.input.username);
+        Key userKey = datastore.newKeyFactory().setKind("User").newKey(request.input.username);
 
         Transaction txn = datastore.newTransaction();
         try {
@@ -117,8 +108,7 @@ DatastoreOptions.getDefaultInstance().getService();
 
             if (userEntity == null) {
                 txn.rollback();
-                ErrorResponse error = new ErrorResponse(ERROR_INVALID_CREDENTIALS,
-MESSAGE_INVALID_CREDENTIALS);
+                ErrorResponse error = new ErrorResponse(ERROR_INVALID_CREDENTIALS, MESSAGE_INVALID_CREDENTIALS);
                 return Response.ok(g.toJson(error)).build();
             }
 
@@ -127,14 +117,11 @@ MESSAGE_INVALID_CREDENTIALS);
 
             if (!storedPwd.equals(oldPwdHash)) {
                 txn.rollback();
-                ErrorResponse error = new ErrorResponse(ERROR_INVALID_CREDENTIALS,
-MESSAGE_INVALID_CREDENTIALS);
+                ErrorResponse error = new ErrorResponse(ERROR_INVALID_CREDENTIALS, MESSAGE_INVALID_CREDENTIALS);
                 return Response.ok(g.toJson(error)).build();
             }
 
-            userEntity = Entity.newBuilder(userEntity)
-                    .set("user_pwd", DigestUtils.sha512Hex(request.input.newPassword))
-                    .build();
+            userEntity = Entity.newBuilder(userEntity).set("user_pwd", DigestUtils.sha512Hex(request.input.newPassword)).build();
 
             txn.put(userEntity);
             txn.commit();
@@ -146,8 +133,7 @@ MESSAGE_INVALID_CREDENTIALS);
             if (txn.isActive()) {
                 txn.rollback();
             }
-            ErrorResponse error = new ErrorResponse("9907",
-                    "The operation generated a forbidden error by other reason");
+            ErrorResponse error = new ErrorResponse(ERROR_FORBIDDEN, MESSAGE_FORBIDDEN);
             return Response.ok(g.toJson(error)).build();
         }
     }

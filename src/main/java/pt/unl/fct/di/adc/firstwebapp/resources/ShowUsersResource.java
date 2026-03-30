@@ -27,24 +27,19 @@ import pt.unl.fct.di.adc.firstwebapp.util.showusers.ShowUsersResponse;
 @Produces(MediaType.APPLICATION_JSON + ";charset=utf-8")
 public class ShowUsersResource {
 
-    private static final String MESSAGE_INVALID_TOKEN =
-    "The operation is called with an invalid token (wrong format for example)";
+    private static final String MESSAGE_INVALID_TOKEN = "The operation is called with an invalid token (wrong format for example)";
     private static final String ERROR_INVALID_TOKEN = "9903";
 
-    private static final String MESSAGE_TOKEN_EXPIRED =
-    "The operation is called with a token that is expired";
+    private static final String MESSAGE_TOKEN_EXPIRED = "The operation is called with a token that is expired";
     private static final String ERROR_TOKEN_EXPIRED = "9904";
 
-    private static final String MESSAGE_UNAUTHORIZED =
-    "The operation is not allowed for the user role";
+    private static final String MESSAGE_UNAUTHORIZED = "The operation is not allowed for the user role";
     private static final String ERROR_UNAUTHORIZED = "9905";
 
-    private static final String MESSAGE_INVALID_INPUT =
-    "The call is using input data not following the correct specification";
+    private static final String MESSAGE_INVALID_INPUT = "The call is using input data not following the correct specification";
     private static final String ERROR_INVALID_INPUT = "9906";
 
-    private static final Datastore datastore =
-    DatastoreOptions.getDefaultInstance().getService();
+    private static final Datastore datastore = DatastoreOptions.getDefaultInstance().getService();
 
     private final Gson g = new Gson();
 
@@ -55,16 +50,14 @@ public class ShowUsersResource {
     @Consumes(MediaType.APPLICATION_JSON)
     public Response showUsers(ShowUsersRequest request) {
         if (request == null || request.input == null || request.token == null ||
-                request.token.tokenId == null || request.token.tokenId.isBlank() ||
-                request.token.username == null || request.token.username.isBlank() ||
-                request.token.role == null || request.token.role.isBlank()) {
+        request.token.tokenId == null || request.token.tokenId.isBlank() ||
+        request.token.username == null || request.token.username.isBlank() ||
+        request.token.role == null || request.token.role.isBlank()) {
             ErrorResponse error = new ErrorResponse(ERROR_INVALID_INPUT, MESSAGE_INVALID_INPUT);
             return Response.ok(g.toJson(error)).build();
         }
 
-        Key tokenKey = datastore.newKeyFactory()
-        .setKind("AuthToken")
-        .newKey(request.token.tokenId);
+        Key tokenKey = datastore.newKeyFactory().setKind("AuthToken").newKey(request.token.tokenId);
 
         Entity tokenEntity = datastore.get(tokenKey);
 
@@ -89,10 +82,8 @@ public class ShowUsersResource {
         String tokenRole = tokenEntity.getString("role");
         long issuedAt = tokenEntity.getLong("issuedAt");
 
-        if (!request.token.username.equals(tokenUsername)
-                || !request.token.role.equals(tokenRole)
-                || request.token.issuedAt != issuedAt
-                || request.token.expiresAt != expiresAt) {
+        if (!request.token.username.equals(tokenUsername) || !request.token.role.equals(tokenRole)
+        || request.token.issuedAt != issuedAt || request.token.expiresAt != expiresAt) {
             ErrorResponse error = new ErrorResponse(ERROR_INVALID_TOKEN, MESSAGE_INVALID_TOKEN);
             return Response.ok(g.toJson(error)).build();
         }
@@ -102,9 +93,7 @@ public class ShowUsersResource {
             return Response.ok(g.toJson(error)).build();
         }
 
-        Query<Entity> query = Query.newEntityQueryBuilder()
-        .setKind("User")
-        .build();
+        Query<Entity> query = Query.newEntityQueryBuilder().setKind("User").build();
 
         QueryResults<Entity> results = datastore.run(query);
         List<UserInfo> users = new ArrayList<>();
