@@ -26,7 +26,7 @@
   ## Run
   Compile:
   ```bash
-  mvn clean compile
+  mvn clean package
   ```
   Run locally:
   ```bash
