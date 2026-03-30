@@ -1,6 +1,6 @@
 # ADC Individual Project
 
-  Backend project for the ADC individual evaluation.
+  Individual project for the ADC-Project course.
 
   ## Tech
   - Java 21
@@ -22,6 +22,19 @@
   - `/changeuserpwd`
   - `/modaccount`
   - `/deleteaccount`
+
+  ## Run
+  Compile:
+  ```bash
+  mvn clean compile
+
+  Run locally:
+
+  mvn appengine:run
+
+  Deploy:
+
+  mvn appengine:deploy
 
   ## Notes
 
