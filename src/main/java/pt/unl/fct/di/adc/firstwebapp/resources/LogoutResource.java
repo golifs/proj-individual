@@ -1,5 +1,8 @@
 package pt.unl.fct.di.adc.firstwebapp.resources;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Consumes;
@@ -11,6 +14,9 @@ import com.google.cloud.datastore.Key;
 import com.google.cloud.datastore.Entity;
 import com.google.cloud.datastore.Datastore;
 import com.google.cloud.datastore.DatastoreOptions;
+import com.google.cloud.datastore.Query;
+import com.google.cloud.datastore.QueryResults;
+import com.google.cloud.datastore.StructuredQuery.PropertyFilter;
 
 import com.google.gson.Gson;
 
@@ -34,6 +40,9 @@ public class LogoutResource {
     private static final String MESSAGE_INVALID_INPUT = "The call is using input data not following the correct specification";
     private static final String ERROR_INVALID_INPUT = "9906";
 
+    private static final String MESSAGE_FORBIDDEN = "The operation generated a forbidden error by other reason";
+    private static final String ERROR_FORBIDDEN = "9907";
+
     private static final Datastore datastore = DatastoreOptions.getDefaultInstance().getService();
 
     private final Gson g = new Gson();
@@ -44,51 +53,75 @@ public class LogoutResource {
     @Path("/")
     @Consumes(MediaType.APPLICATION_JSON)
     public Response doLogout(LogoutRequest request) {
-        if (request == null || request.input == null || request.token == null ||
-        request.input.username == null || request.input.username.isBlank() ||
-        request.token.tokenId == null || request.token.tokenId.isBlank() ||
-        request.token.username == null || request.token.username.isBlank() ||
-        request.token.role == null || request.token.role.isBlank()) {
-            ErrorResponse error = new ErrorResponse(ERROR_INVALID_INPUT, MESSAGE_INVALID_INPUT);
-            return Response.ok(g.toJson(error)).build();
-        }
+        try {
+            if (request == null || request.input == null || request.token == null ||
+            request.input.username == null || request.input.username.isBlank() ||
+            request.token.tokenId == null || request.token.tokenId.isBlank() ||
+            request.token.username == null || request.token.username.isBlank() ||
+            request.token.role == null || request.token.role.isBlank()) {
+                ErrorResponse error = new ErrorResponse(ERROR_INVALID_INPUT, MESSAGE_INVALID_INPUT);
+                return Response.ok(g.toJson(error)).build();
+            }
 
-        Key tokenKey = datastore.newKeyFactory().setKind("AuthToken").newKey(request.token.tokenId);
-        Entity tokenEntity = datastore.get(tokenKey);
+            Key tokenKey = datastore.newKeyFactory().setKind("AuthToken").newKey(request.token.tokenId);
+            Entity tokenEntity = datastore.get(tokenKey);
 
-        if(tokenEntity == null) {
-            ErrorResponse error = new ErrorResponse(ERROR_INVALID_TOKEN, MESSAGE_INVALID_TOKEN);
-            return Response.ok(g.toJson(error)).build();
-        }
+            if(tokenEntity == null) {
+                ErrorResponse error = new ErrorResponse(ERROR_INVALID_TOKEN, MESSAGE_INVALID_TOKEN);
+                return Response.ok(g.toJson(error)).build();
+            }
 
-        long now = System.currentTimeMillis() / 1000;
-        if (request.token.expiresAt < now) {
-            ErrorResponse error = new ErrorResponse(ERROR_TOKEN_EXPIRED, MESSAGE_TOKEN_EXPIRED);
-            return Response.ok(g.toJson(error)).build();
-        }
-        long expiresAt = tokenEntity.getLong("expiresAt");
-        if(expiresAt < now) {
-            ErrorResponse error = new ErrorResponse(ERROR_TOKEN_EXPIRED, MESSAGE_TOKEN_EXPIRED);
-            return Response.ok(g.toJson(error)).build();
-        }
+            long now = System.currentTimeMillis() / 1000;
+            if (request.token.expiresAt < now) {
+                ErrorResponse error = new ErrorResponse(ERROR_TOKEN_EXPIRED, MESSAGE_TOKEN_EXPIRED);
+                return Response.ok(g.toJson(error)).build();
+            }
+            long expiresAt = tokenEntity.getLong("expiresAt");
+            if(expiresAt < now) {
+                ErrorResponse error = new ErrorResponse(ERROR_TOKEN_EXPIRED, MESSAGE_TOKEN_EXPIRED);
+                return Response.ok(g.toJson(error)).build();
+            }
 
-        String tokenUsername = tokenEntity.getString("username");
-        String tokenRole = tokenEntity.getString("role");
-        long issuedAt = tokenEntity.getLong("issuedAt");
-        if(!request.token.username.equals(tokenUsername)
-        || !request.token.role.equals(tokenRole)
-        || request.token.issuedAt != issuedAt
-        || request.token.expiresAt != expiresAt) {
-            ErrorResponse error = new ErrorResponse(ERROR_INVALID_TOKEN, MESSAGE_INVALID_TOKEN);
-            return Response.ok(g.toJson(error)).build();
-        }
-        if(!tokenRole.equals("ADMIN") && !request.input.username.equals(tokenUsername)) {
-            ErrorResponse error = new ErrorResponse(ERROR_UNAUTHORIZED, MESSAGE_UNAUTHORIZED);
-            return Response.ok(g.toJson(error)).build();
-        }
+            String tokenUsername = tokenEntity.getString("username");
+            String tokenRole = tokenEntity.getString("role");
+            long issuedAt = tokenEntity.getLong("issuedAt");
+            if(!request.token.username.equals(tokenUsername)
+            || !request.token.role.equals(tokenRole)
+            || request.token.issuedAt != issuedAt
+            || request.token.expiresAt != expiresAt) {
+                ErrorResponse error = new ErrorResponse(ERROR_INVALID_TOKEN, MESSAGE_INVALID_TOKEN);
+                return Response.ok(g.toJson(error)).build();
+            }
+            if(!tokenRole.equals("ADMIN") && !request.input.username.equals(tokenUsername)) {
+                ErrorResponse error = new ErrorResponse(ERROR_UNAUTHORIZED, MESSAGE_UNAUTHORIZED);
+                return Response.ok(g.toJson(error)).build();
+            }
 
-        datastore.delete(tokenKey);
-        LogoutResponse response = new LogoutResponse();
-        return Response.ok(g.toJson(response)).build();
+            if (tokenRole.equals("ADMIN")) {
+                Query<Entity> query = Query.newEntityQueryBuilder()
+                        .setKind("AuthToken")
+                        .setFilter(PropertyFilter.eq("username", request.input.username))
+                        .build();
+
+                QueryResults<Entity> results = datastore.run(query);
+                List<Key> tokenKeys = new ArrayList<>();
+
+                while (results.hasNext()) {
+                    tokenKeys.add(results.next().getKey());
+                }
+
+                for (Key key : tokenKeys) {
+                    datastore.delete(key);
+                }
+            } else {
+                datastore.delete(tokenKey);
+            }
+
+            LogoutResponse response = new LogoutResponse();
+            return Response.ok(g.toJson(response)).build();
+        } catch (Exception e) {
+            ErrorResponse error = new ErrorResponse(ERROR_FORBIDDEN, MESSAGE_FORBIDDEN);
+            return Response.ok(g.toJson(error)).build();
+        }
     }
 }
