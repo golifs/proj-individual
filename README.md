@@ -27,14 +27,15 @@
   Compile:
   ```bash
   mvn clean compile
-
+  ```
   Run locally:
-
+  ```bash
   mvn appengine:run
-
-  Deploy:
-
-  mvn appengine:deploy
+  ```
+  Url:
+  ```bash
+  http://localhost:8080/
+  ```
 
   ## Notes
 
